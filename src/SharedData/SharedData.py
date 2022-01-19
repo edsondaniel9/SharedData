@@ -25,12 +25,11 @@ class SharedData:
         
         # DATASET
         path = Path(config.db_directory)
-        datasetPath = path / database / 'DataSet.xlsx'
+        datasetPath = path / database / (database+'_DataSet.xlsx')
         if datasetPath.is_file():
             self.dataset = pd.read_excel(datasetPath, sheet_name='DATASET')
         else:
-            self.logger.error('SharedData could not find dataset at %s' % (datasetPath))
-            raise Exception('SharedData could not find dataset at %s' % (datasetPath))
+            self.logger.warning('SharedData could not find dataset at %s' % (datasetPath))            
         
     def __setitem__(self, feeder, value):
         self.data[feeder] = value
@@ -42,7 +41,7 @@ class SharedData:
                           
     def getSymbols(self, collection):        
         if not collection in self.metadata.keys():            
-            md = Metadata(collection)
+            md = Metadata(collection,self.config)
             self.metadata[collection] = md            
         return self.metadata[collection].static.index.values
     

@@ -18,7 +18,11 @@ downloads_directory = r'D:\DOWNLOADS'
 
 s3_sync = False
 s3_bucket = 's3://tradebywire/files'
-awsclipath =  r'C:\Program Files\Amazon\AWSCLIV2\aws.exe'
+aws_clipath =  r'C:\Program Files\Amazon\AWSCLIV2\aws.exe'
+aws_accesskeyid='AKIAUI3ESJGFDRHTXEF7'
+aws_secretkey='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'
+aws_region='sa-east-1'
+aws_outputformat='json'
 
 verbose_level = logging.INFO
 logging_level = logging.INFO

@@ -10,7 +10,7 @@ class Metadata():
     def __init__(self, name, config):
         self.name = name
         self.logger = config.logger
-        self.config = config.data
+        self.config = config
         self.xls = {}
         self.static = pd.DataFrame([])        
         self.symbols = pd.DataFrame([],dtype=str)
@@ -19,8 +19,8 @@ class Metadata():
 
         self.xlsxpath = self.fpath /  ('Metadata/'+name+'.xlsx')
         self.path = self.fpath /  ('Metadata/'+name+'.pkl')
-        self.pathsymbols = self.fpath /  ('Metadata/'+name+'/FUT/SYMBOLS.pkl')
-        self.pathseries = self.fpath /  ('Metadata/'+name+'/FUT/SERIES.pkl')
+        self.pathsymbols = self.fpath /  ('Metadata/'+name+'_SYMBOLS.pkl')
+        self.pathseries = self.fpath /  ('Metadata/'+name+'_SERIES.pkl')
 
         if not os.path.isdir(self.path.parents[0]):
             os.makedirs(self.path.parents[0]) 
