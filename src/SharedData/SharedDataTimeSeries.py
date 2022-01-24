@@ -4,12 +4,15 @@ import pandas as pd
 import numpy as np
 import json
 import time
-
 from numba import jit
 from pandas.tseries.offsets import BDay
 from pathlib import Path
 from multiprocessing import shared_memory
+import subprocess
 from subprocess import run, PIPE
+import boto3
+
+from SharedData.Logger import Logger
 
 class SharedDataTimeSeries:
 
@@ -18,9 +21,7 @@ class SharedDataTimeSeries:
         self.tag = tag
         
         self.sharedDataFeeder = sharedDataPeriod.sharedDataFeeder
-        self.sharedData = sharedDataPeriod.sharedDataFeeder.sharedData
-        self.config = self.sharedData.config
-        self.logger = self.sharedData.logger
+        self.sharedData = sharedDataPeriod.sharedDataFeeder.sharedData        
 
         self.period = sharedDataPeriod.period
         self.periodSeconds = sharedDataPeriod.periodSeconds               
@@ -58,8 +59,8 @@ class SharedDataTimeSeries:
             #allocate memory
             isCreate = self.Malloc()
             if isCreate:
-                if self.config.s3_sync:
-                    self.S3Sync()
+                if self.sharedData.s3read:
+                    self.S3SyncDownload()
                 self.Read()                
         
         else: # map existing dataframe
@@ -79,7 +80,7 @@ class SharedDataTimeSeries:
         shm_name = self.sharedData.database
         shm_name = shm_name + '/' + self.sharedDataFeeder.feeder
         shm_name = shm_name + '/' + self.period + '/' + self.tag
-        path = Path(self.config.db_directory)
+        path = Path(os.environ['DATABASE_FOLDER'])
         path =  path / shm_name        
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -168,7 +169,7 @@ class SharedDataTimeSeries:
     # C R U D
     def Malloc(self, value=None):
         tini=time.time()
-        self.logger.debug('Malloc %s/%s/%s ...%.2f%% ' % \
+        Logger.log.debug('Malloc %s/%s/%s ...%.2f%% ' % \
             (self.feeder,self.period,self.tag,0.0))        
 
         #Create write ndarray
@@ -207,7 +208,7 @@ class SharedDataTimeSeries:
                     }
                 json.dump(shm_info, outfile, indent=3)
 
-            self.logger.debug('Malloc create %s/%s/%s ...%.2f%% %.2f sec! ' % \
+            Logger.log.debug('Malloc create %s/%s/%s ...%.2f%% %.2f sec! ' % \
                 (self.feeder,self.period,self.tag,100,time.time()-tini))            
 
             return True
@@ -238,17 +239,30 @@ class SharedDataTimeSeries:
                     icol = value.columns.intersection(self.data.columns)
                     self.data.loc[iidx, icol] = value.loc[iidx, icol]
 
-                self.logger.debug('Malloc map %s/%s/%s ...%.2f%% %.2f sec! ' % \
+                Logger.log.debug('Malloc map %s/%s/%s ...%.2f%% %.2f sec! ' % \
                     (self.feeder,self.period,self.tag,100,time.time()-tini))      
         return False
       
-    def S3Sync(self):
+    def S3SyncDownload(self):
         path, shm_name = self.getDataPath()
-        awsclipath = self.config.awsclipath
-        awsfolder = self.config.s3_bucket+'/'+shm_name+'/'
-        result = run([awsclipath,'s3','sync',awsfolder,path]\
-                ,shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        print(result.returncode, result.stdout, result.stderr)
+        awsclipath = os.environ['AWSCLI_PATH']
+        awsfolder = os.environ['S3_BUCKET']+'/'+shm_name+'/'
+        Logger.log.debug('AWS sync download %s...' % (awsfolder))
+        # result = run([awsclipath,'s3','sync',awsfolder,path,'--delete']\            
+        #         ,shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        process = subprocess.Popen([awsclipath,'s3','sync',awsfolder,str(path),\
+            '--profile','s3readonly','--delete','--exclude=shm_info.json'],\
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        while True:
+            output = process.stdout.readline()
+            if ((output == '') | (output == b''))\
+                 & (process.poll() is not None):
+                break
+            if output:
+                Logger.log.debug('AWSCLI:'+output.strip().replace('\r','\r\n'))
+        Logger.log.debug('DONE!')
+        rc = process.poll()
+        return rc==0        
 
     def Read(self):   
         path, shm_name = self.getDataPath()        
@@ -260,7 +274,7 @@ class SharedDataTimeSeries:
         nfiles = len(files.index)
         if nfiles>0:
             tini=time.time() 
-            self.logger.debug('Reading %s/%s/%s ...%.2f%% ' % \
+            Logger.log.debug('Reading %s/%s/%s ...%.2f%% ' % \
                 (self.feeder,self.period,self.tag,0.0))   
             n=0
             for f in files.index:
@@ -280,7 +294,7 @@ class SharedDataTimeSeries:
                     self.setValuesJit(self.data.values,tidx,sidx,arr[:,1:])
                 n=n+1                
 
-            self.logger.debug('Reading %s/%s/%s ...%.2f%% %.2f sec! ' % \
+            Logger.log.debug('Reading %s/%s/%s ...%.2f%% %.2f sec! ' % \
                 (self.feeder,self.period,self.tag,100*(n/nfiles),time.time()-tini))
 
     def Write(self, busdays=None, startDate=None):
@@ -296,7 +310,7 @@ class SharedDataTimeSeries:
             lastdate = startDate
         
         startdatestr = lastdate.strftime('%Y-%m-%d')
-        self.logger.debug('Writing %s/%s/%s from %s ...%.2f%% ' % \
+        Logger.log.debug('Writing %s/%s/%s from %s ...%.2f%% ' % \
             (self.feeder,self.period,self.tag,startdatestr,0.0))
         
         path, shm_name = self.getDataPath()        
@@ -314,14 +328,23 @@ class SharedDataTimeSeries:
                 dfyear.index = (dfyear.index.astype(np.int64)/10**9).astype(np.int64)
                 dfyear = dfyear.reset_index()
 
-                fpath = path / (str(y)+'.npy')
-                np.save(str(fpath),dfyear.values.astype(np.float64))
+                fpath_npy = path / (str(y)+'.npy')
+                np.save(str(fpath_npy),dfyear.values.astype(np.float64))
                 cols = ','.join(dfyear.columns)
-                fpath = path / (str(y)+'.csv')
-                with open(fpath, 'w') as f:
+                fpath_csv = path / (str(y)+'.csv')
+                with open(fpath_csv, 'w') as f:
                     f.write(cols)
+                if self.sharedData.s3write:
+                    self.S3SyncUpload(fpath_npy)
+                    self.S3SyncUpload(fpath_csv)
                 cy=cy+1      
 
-        self.logger.debug('Writing %s/%s/%s from %s ...%.2f%% %.2f sec!' % \
+        Logger.log.debug('Writing %s/%s/%s from %s ...%.2f%% %.2f sec!' % \
             (self.feeder,self.period,self.tag,startdatestr,100*cy/ny,time.time()-tini))        
         
+
+    def S3SyncUpload(self,localfilepath):
+        remotefilepath = localfilepath.replace(\
+            os.environ['DATABASE_FOLDER'],os.environ['S3_BUCKET'])
+        s3 = boto3.resource('s3')
+        s3.Bucket(os.environ['S3_BUCKET']).upload_file(localfilepath,remotefilepath)

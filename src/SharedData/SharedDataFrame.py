@@ -10,6 +10,8 @@ from pandas.tseries.offsets import BDay
 from pathlib import Path
 from multiprocessing import shared_memory
 
+from SharedData.Logger import Logger
+
 class SharedDataFrame:
 
     def __init__(self, sharedDataPeriod, tag, df=None, malloc=True):    
@@ -20,8 +22,6 @@ class SharedDataFrame:
         self.sharedDataFeeder = sharedDataPeriod.sharedDataFeeder
         self.feeder = sharedDataPeriod.sharedDataFeeder.feeder
         self.sharedData = sharedDataPeriod.sharedDataFeeder.sharedData
-        self.config = self.sharedData.config
-        self.logger = self.sharedData.logger
 
         self.period = sharedDataPeriod.period
         self.periodSeconds = sharedDataPeriod.periodSeconds               
@@ -50,7 +50,7 @@ class SharedDataFrame:
         shm_name = self.sharedData.database
         shm_name = shm_name + '/' + self.sharedDataFeeder.feeder
         shm_name = shm_name + '/' + self.period + '/' + self.tag
-        path = Path(self.config.db_directory)
+        path = Path(os.environ['DATABASE_FOLDER'])
         path =  path / shm_name        
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -59,7 +59,7 @@ class SharedDataFrame:
     # C R U D
     def Malloc(self, df=None):
         tini=time.time()
-        self.logger.debug('Malloc %s/%s/%s ...%.2f%% ' % \
+        Logger.log.debug('Malloc %s/%s/%s ...%.2f%% ' % \
             (self.feeder,self.period,self.tagstr,0.0))      
 
         #Create write ndarray
@@ -92,7 +92,7 @@ class SharedDataFrame:
                         }
                     json.dump(shm_info, outfile, indent=3)
 
-                self.logger.debug('Malloc create %s/%s/%s ...%.2f%% %.2f sec! ' % \
+                Logger.log.debug('Malloc create %s/%s/%s ...%.2f%% %.2f sec! ' % \
                     (self.feeder,self.period,self.tagstr,100,time.time()-tini))                
                 return True
             except:
@@ -122,7 +122,7 @@ class SharedDataFrame:
                         icol = df.columns.intersection(self.data.columns)
                         self.data.loc[iidx, icol] = df.loc[iidx, icol].copy()
                                             
-                    self.logger.debug('Malloc map %s/%s/%s ...%.2f%% %.2f sec! ' % \
+                    Logger.log.debug('Malloc map %s/%s/%s ...%.2f%% %.2f sec! ' % \
                         (self.feeder,self.period,self.tagstr,100,time.time()-tini))                    
                     return True
                 except:
@@ -137,7 +137,7 @@ class SharedDataFrame:
         npypath = path / (self.tagstr+'.npy')
             
         if (jsonpath.is_file()) & (npypath.is_file()):
-            self.logger.debug('Reading %s/%s/%s ...%.2f%% ' % \
+            Logger.log.debug('Reading %s/%s/%s ...%.2f%% ' % \
                 (self.feeder,self.period,self.tagstr,0.0))  
             with open(str(jsonpath), 'r') as infile:
                 try:
@@ -153,18 +153,18 @@ class SharedDataFrame:
                         index=_index,\
                         columns=_columns)
 
-                    self.logger.debug('Reading %s/%s/%s ...%.2f%% %.2f sec! ' % \
+                    Logger.log.debug('Reading %s/%s/%s ...%.2f%% %.2f sec! ' % \
                         (self.feeder,self.period,self.tagstr,100,time.time()-tini))
                     return df
                 except:
                     pass
-                    self.logger.error('File corrupted %s/%s/%s ...%.2f%% %.2f sec! ' % \
+                    Logger.log.error('File corrupted %s/%s/%s ...%.2f%% %.2f sec! ' % \
                         (self.feeder,self.period,self.tagstr,100,time.time()-tini))                
         return pd.DataFrame([])
 
     def Write(self,startDate=[]):
         tini = time.time()
-        self.logger.debug('Writing %s/%s  ...%.2f%% ' % \
+        Logger.log.debug('Writing %s/%s  ...%.2f%% ' % \
             (self.period,self.tagstr,0.0))        
 
         path, shm_name = self.getDataPath()
@@ -180,6 +180,6 @@ class SharedDataFrame:
         
         np.save(str(npypath),self.data.values.astype(np.float64))
 
-        self.logger.debug('Writing %s/%s ...%.2f%% %.2f sec!' % \
+        Logger.log.debug('Writing %s/%s ...%.2f%% %.2f sec!' % \
             (self.period,self.tagstr,100,time.time()-tini))
         

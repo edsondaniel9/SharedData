@@ -2,13 +2,13 @@ import pandas as pd
 import numpy as np
 
 from SharedData.SharedDataPeriod import SharedDataPeriod
+from SharedData.Logger import Logger
 
 class SharedDataFeeder():
     
     def __init__(self, sharedData, feeder):
         self.feeder = feeder
-        self.sharedData = sharedData
-        self.logger = self.sharedData.logger
+        self.sharedData = sharedData        
     
         self.dataset = sharedData.dataset
         idx = self.dataset['feeder']==feeder
@@ -29,6 +29,6 @@ class SharedDataFeeder():
             if (period=='D1') | (period=='M15') | (period=='M1'):
                 self.data[period] = SharedDataPeriod(self, period)
             else:
-                self.logger.error('Period '+period+ ' not supported!')
+                Logger.log.error('Period '+period+ ' not supported!')
                 raise ValueError('Period '+period+ ' not supported!')
         return self.data[period]

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -10,8 +11,7 @@ class SharedDataPeriod:
 
     def __init__(self, sharedDataFeeder, period):
         self.sharedDataFeeder = sharedDataFeeder        
-        self.sharedData = sharedDataFeeder.sharedData
-        self.config = self.sharedData.config
+        self.sharedData = sharedDataFeeder.sharedData        
         self.period = period
         
         # PRE REGISTERED TAGS
@@ -109,7 +109,7 @@ class SharedDataPeriod:
     
     def exists(self, tag):
         if isinstance(tag, pd.Timestamp):            
-            path = Path(self.config.db_directory)     
+            path = Path(os.environ['DATABASE_FOLDER'])     
             path =  path / self.sharedDataFeeder.feeder
             path =  path / self.period       
             fpath =  path / (tag.strftime('%Y%m%d%H%M')+'.npy')

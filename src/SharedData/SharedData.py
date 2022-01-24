@@ -1,20 +1,14 @@
-from multiprocessing import Condition
-from pathlib import Path
-import pandas as pd
-import logging
 
 from SharedData.SharedDataFeeder import SharedDataFeeder
 from SharedData.Metadata import Metadata
 
 class SharedData:
 
-    def __init__(self, config, database='Signals'):
-        
-        self.config = config
-        self.logger = config.logger
-    
+    def __init__(self, database,s3read=False,s3write=False):                            
         self.database = database
-
+        self.s3read = s3read
+        self.s3write = s3write
+        
         # DATA DICTIONARY
         # SharedDataTimeSeries: data[feeder][period][tag] (date x symbols)
         # SharedDataFrame: data[feeder][period][date] (symbols x tags)
@@ -24,13 +18,9 @@ class SharedData:
         self.metadata = {}
         
         # DATASET
-        path = Path(config.db_directory)
-        datasetPath = path / database / (database+'_DataSet.xlsx')
-        if datasetPath.is_file():
-            self.dataset = pd.read_excel(datasetPath, sheet_name='DATASET')
-        else:
-            self.logger.warning('SharedData could not find dataset at %s' % (datasetPath))            
-        
+        md = Metadata('DATASET/DATASET_' + database)
+        self.dataset = md.static
+
     def __setitem__(self, feeder, value):
         self.data[feeder] = value
                 
@@ -38,11 +28,13 @@ class SharedData:
         if not feeder in self.data.keys():
             self.data[feeder] = SharedDataFeeder(self, feeder)
         return self.data[feeder]
-                          
+
+    def getMetadata(self, collection):
+        if not collection in self.metadata.keys():              
+            self.metadata[collection] = Metadata(collection)
+        return self.metadata[collection]
+
     def getSymbols(self, collection):        
-        if not collection in self.metadata.keys():            
-            md = Metadata(collection,self.config)
-            self.metadata[collection] = md            
-        return self.metadata[collection].static.index.values
+        return self.getMetadata(collection).static.index.values
     
     
