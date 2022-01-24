@@ -70,9 +70,9 @@ class Metadata():
             '--include',self.name.split('/')[-1]+'.pkl',\
             '--include',self.name.split('/')[-1]+'_SYMBOLS.pkl',
             '--include',self.name.split('/')[-1]+'_SERIES.pkl',
-            '--include',self.name.split('/')[-1]+'.xlsx',\
-            '--delete']\
-            ,stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)        
+            '--include',self.name.split('/')[-1]+'.xlsx'],\
+            #'--delete'],\
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)        
         while True:
             output = process.stdout.readline()
             if ((output == '') | (output == b''))\

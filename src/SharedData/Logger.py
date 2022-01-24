@@ -28,7 +28,6 @@ class Logger:
             os.makedirs(path.parents[0])
         os.environ['LOG_PATH'] = str(path)
 
-
         if os.environ['LOG_LEVEL']=='DEBUG':
             loglevel = logging.DEBUG
         elif os.environ['LOG_LEVEL']=='INFO':

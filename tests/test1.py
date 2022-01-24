@@ -1,7 +1,6 @@
 from SharedData.Logger import Logger
 logger = Logger(__file__)
 
-
 import numpy as np
 message = 'Logging test %2.10f' % (np.random.rand())
 Logger.log.info(message)

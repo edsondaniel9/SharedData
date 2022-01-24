@@ -11,11 +11,15 @@ class SharedDataFeeder():
         self.sharedData = sharedData        
     
         self.dataset = sharedData.dataset
-        idx = self.dataset['feeder']==feeder
-        if np.any(idx):
-            self.dataset = self.dataset[idx]
+        if len(self.dataset)>0:
+            idx = self.dataset['feeder']==feeder            
+            if np.any(idx):
+                self.dataset = self.dataset[idx]
+            else:
+                self.dataset = pd.DataFrame([]) 
         else:
-            self.dataset = pd.DataFrame([])        
+            Logger.log.error('feeder not found in dataset!')
+            raise Exception('feeder not found in dataset!')    
 
         # DATA DICTIONARY
         # data[period][tag]
