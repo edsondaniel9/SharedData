@@ -32,7 +32,8 @@ class SharedData:
 
     def getMetadata(self, collection):
         if not collection in self.metadata.keys():              
-            self.metadata[collection] = Metadata(collection)
+            self.metadata[collection] = Metadata(collection,\
+                s3read=self.s3read,s3write=self.s3write)
         return self.metadata[collection]
 
     def getSymbols(self, collection):        
