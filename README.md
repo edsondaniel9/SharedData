@@ -17,7 +17,7 @@
 <li>install bpapi > python -m pip install --index-url=https://bcms.bloomberg.com/pip/simple </li>
 </ul>
 
-## create .env file in root folder Ie:
+## Create .env file in root folder Ie:
 <ul>
 <li>SOURCE_FOLDER=C:\src\SharedData\src</li>
 <li>PYTHONPATH=${SOURCE_FOLDER}</li>
@@ -28,8 +28,7 @@
 <li>S3_BUCKET=[S3_BUCKET]</li>
 </ul>
 
-## configure aws cli
-
+## Configure aws cli
 
 ### Read only permission enter command bellow
 <ul>
