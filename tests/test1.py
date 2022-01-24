@@ -16,6 +16,10 @@ Logger.log.info(os.environ['LOG_PATH'])
 Logger.log.info('environment variables loaded!')
 
 
+from SharedData.Metadata import Metadata
+
+md = Metadata('MASTER/FUT',s3read=True)
+
 from SharedData.SharedData import SharedData
 
 shdata = SharedData('MarketData',s3read=True,s3write=True)

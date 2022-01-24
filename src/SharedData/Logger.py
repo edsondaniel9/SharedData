@@ -25,7 +25,7 @@ class Logger:
         path = path / (os.environ['USERNAME']+'@'+os.environ['USERDOMAIN'])        
         path = path / (source+'.log')
         if not path.parents[0].is_dir():
-            os.makedirs(path)
+            os.makedirs(path.parents[0])
         os.environ['LOG_PATH'] = str(path)
 
 

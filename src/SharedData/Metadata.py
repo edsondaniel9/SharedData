@@ -3,14 +3,16 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import time
-from subprocess import run, PIPE
+import subprocess
 
 from SharedData.Logger import Logger
 
 class Metadata():
     
-    def __init__(self, name):        
+    def __init__(self, name, s3read=False, s3write=False):
         self.name = name
+        self.s3read = s3read
+        self.s3write = s3write
         self.xls = {}
         self.static = pd.DataFrame([])        
         self.symbols = pd.DataFrame([],dtype=str)
@@ -25,19 +27,9 @@ class Metadata():
         if not os.path.isdir(self.pathpkl.parents[0]):
             os.makedirs(self.pathpkl.parents[0]) 
 
-        # if (config.s3_sync):           
-        #     folder=str(self.pathpkl.parents[0]).replace(config.db_directory,'')
-        #     folder = folder.replace('\\','/')+'/'
-        #     dbfolder = str(self.pathpkl.parents[0])
-        #     dbfolder = dbfolder.replace('\\','/')+'/'
-        #     awsfolder = config.s3_bucket + folder
-        #     awsclipath = config.awsclipath
-        #     result = run([awsclipath,'s3','sync',awsfolder,dbfolder,\
-        #         '--exclude="*"',
-        #         '--include="'+name+'.xlsx,'+name+'.pkl,'+name+'/FUT/SYMBOLS.pkl,'+name+'/FUT/SERIES.pkl"']\
-        #         ,shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-        #     print(result.returncode, result.stdout, result.stderr)
-
+        if (self.s3read):
+            self.S3SyncDownload()
+            
         # prefer read pkl
         if self.pathpkl.is_file():            
             tini = time.time()
@@ -63,6 +55,34 @@ class Metadata():
             if not self.symbols.empty:
                 self.symbols = self.symbols.set_index(self.symbols.columns[0])
             Logger.log.debug('%.2f done!' % (time.time()-tini))
+
+    def S3SyncDownload(self):
+        folder=str(self.pathpkl.parents[0]).replace(\
+            os.environ['DATABASE_FOLDER'],'')
+        folder = folder.replace('\\','/')+'/'
+        dbfolder = str(self.pathpkl.parents[0])
+        dbfolder = dbfolder.replace('\\','/')+'/'
+        awsfolder = os.environ['S3_BUCKET'] + folder
+        awsclipath = os.environ['AWSCLI_PATH']
+        process = subprocess.Popen([awsclipath,'s3','sync',awsfolder,dbfolder,\
+            '--profile','s3readonly',\
+            '--exclude','*',\
+            '--include',self.name.split('/')[-1]+'.pkl',\
+            '--include',self.name.split('/')[-1]+'_SYMBOLS.pkl',
+            '--include',self.name.split('/')[-1]+'_SERIES.pkl',
+            '--include',self.name.split('/')[-1]+'.xlsx',\
+            '--delete']\
+            ,stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)        
+        while True:
+            output = process.stdout.readline()
+            if ((output == '') | (output == b''))\
+                 & (process.poll() is not None):
+                break
+            if output:
+                Logger.log.debug('AWSCLI:'+output.strip().replace('\r','\r\n'))
+        Logger.log.debug('DONE!')
+        rc = process.poll()
+        return rc==0
 
     def save(self,save_excel=False):
         tini = time.time()

@@ -247,9 +247,7 @@ class SharedDataTimeSeries:
         path, shm_name = self.getDataPath()
         awsclipath = os.environ['AWSCLI_PATH']
         awsfolder = os.environ['S3_BUCKET']+'/'+shm_name+'/'
-        Logger.log.debug('AWS sync download %s...' % (awsfolder))
-        # result = run([awsclipath,'s3','sync',awsfolder,path,'--delete']\            
-        #         ,shell=True, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        Logger.log.debug('AWS sync download %s...' % (awsfolder))        
         process = subprocess.Popen([awsclipath,'s3','sync',awsfolder,str(path),\
             '--profile','s3readonly','--delete','--exclude=shm_info.json'],\
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)

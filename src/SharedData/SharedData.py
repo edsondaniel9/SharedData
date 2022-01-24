@@ -18,7 +18,8 @@ class SharedData:
         self.metadata = {}
         
         # DATASET
-        md = Metadata('DATASET/DATASET_' + database)
+        md = Metadata('DATASET/DATASET_' + database,\
+            s3read=self.s3read,s3write=self.s3write)
         self.dataset = md.static
 
     def __setitem__(self, feeder, value):
