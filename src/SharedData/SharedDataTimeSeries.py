@@ -340,9 +340,13 @@ class SharedDataTimeSeries:
         Logger.log.debug('Writing %s/%s/%s from %s ...%.2f%% %.2f sec!' % \
             (self.feeder,self.period,self.tag,startdatestr,100*cy/ny,time.time()-tini))        
         
-
     def S3SyncUpload(self,localfilepath):
-        remotefilepath = localfilepath.replace(\
-            os.environ['DATABASE_FOLDER'],os.environ['S3_BUCKET'])
-        s3 = boto3.resource('s3')
-        s3.Bucket(os.environ['S3_BUCKET']).upload_file(localfilepath,remotefilepath)
+        Logger.debug('Uploading to S3 '+localfilepath+' ...')
+        try:
+            remotefilepath = localfilepath.replace(\
+                os.environ['DATABASE_FOLDER'],os.environ['S3_BUCKET'])            
+            s3 = boto3.resource('s3')
+            s3.Bucket(os.environ['S3_BUCKET']).upload_file(localfilepath,remotefilepath)
+            Logger.debug('Uploading to S3 SUCESS!')
+        except Exception as e:
+            Logger.error('Uploading to S3 ERROR!')
