@@ -6,7 +6,7 @@
 <li><a href="https://git-scm.com/downloads">git</a></li>
 <li><a href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html">awscli</a></li>
 <li><a href="https://www.python.org/downloads/release/python-394/">python 3.9.4</a></li>
-<li><a href="https://github.com/jcarlitooliveira/SharedData">clone repository</a></li>
+<li><a href="https://docs.microsoft.com/en-us/azure/developer/javascript/how-to/with-visual-studio-code/clone-github-repository?tabs=create-repo-command-palette%2Cinitialize-repo-activity-bar%2Ccreate-branch-command-palette%2Ccommit-changes-command-palette%2Cpush-command-palette">clone repository</a></li>
 
 ### create virtual environment
 <li>enter command: pip -m venv venv</li>
