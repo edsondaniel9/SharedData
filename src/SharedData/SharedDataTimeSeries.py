@@ -13,6 +13,7 @@ from subprocess import run, PIPE
 import boto3
 
 from SharedData.Logger import Logger
+from SharedData.AWS import S3SyncDownloadTimeSeries
 
 class SharedDataTimeSeries:
 
@@ -60,7 +61,8 @@ class SharedDataTimeSeries:
             isCreate = self.Malloc()
             if isCreate:
                 if self.sharedData.s3read:
-                    self.S3SyncDownload()
+                    path, shm_name = self.getDataPath()
+                    S3SyncDownloadTimeSeries(path, shm_name)
                 self.Read()                
         
         else: # map existing dataframe
@@ -243,24 +245,6 @@ class SharedDataTimeSeries:
                     (self.feeder,self.period,self.tag,100,time.time()-tini))      
         return False
       
-    def S3SyncDownload(self):
-        path, shm_name = self.getDataPath()
-        awsclipath = os.environ['AWSCLI_PATH']
-        awsfolder = os.environ['S3_BUCKET']+'/'+shm_name+'/'
-        Logger.log.debug('AWS sync download %s...' % (awsfolder))        
-        process = subprocess.Popen([awsclipath,'s3','sync',awsfolder,str(path),\
-            '--profile','s3readonly','--delete','--exclude=shm_info.json'],\
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        while True:
-            output = process.stdout.readline()
-            if ((output == '') | (output == b''))\
-                 & (process.poll() is not None):
-                break
-            if output:
-                Logger.log.debug('AWSCLI:'+output.strip().replace('\r','\r\n'))
-        Logger.log.debug('DONE!')
-        rc = process.poll()
-        return rc==0        
 
     def Read(self):   
         path, shm_name = self.getDataPath()        

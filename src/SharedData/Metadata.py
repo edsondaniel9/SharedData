@@ -6,6 +6,7 @@ import time
 import subprocess
 
 from SharedData.Logger import Logger
+from SharedData.AWS import S3SyncDownloadMetadata
 
 class Metadata():
     
@@ -28,7 +29,7 @@ class Metadata():
             os.makedirs(self.pathpkl.parents[0]) 
 
         if (self.s3read):
-            self.S3SyncDownload()
+            S3SyncDownloadMetadata(self.pathpkl,self.name)
             
         # prefer read pkl
         if self.pathpkl.is_file():            
@@ -56,33 +57,6 @@ class Metadata():
                 self.symbols = self.symbols.set_index(self.symbols.columns[0])
             Logger.log.debug('%.2f done!' % (time.time()-tini))
 
-    def S3SyncDownload(self):
-        folder=str(self.pathpkl.parents[0]).replace(\
-            os.environ['DATABASE_FOLDER'],'')
-        folder = folder.replace('\\','/')+'/'
-        dbfolder = str(self.pathpkl.parents[0])
-        dbfolder = dbfolder.replace('\\','/')+'/'
-        awsfolder = os.environ['S3_BUCKET'] + folder
-        awsclipath = os.environ['AWSCLI_PATH']
-        process = subprocess.Popen([awsclipath,'s3','sync',awsfolder,dbfolder,\
-            '--profile','s3readonly',\
-            '--exclude','*',\
-            '--include',self.name.split('/')[-1]+'.pkl',\
-            '--include',self.name.split('/')[-1]+'_SYMBOLS.pkl',
-            '--include',self.name.split('/')[-1]+'_SERIES.pkl',
-            '--include',self.name.split('/')[-1]+'.xlsx'],\
-            #'--delete'],\
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)        
-        while True:
-            output = process.stdout.readline()
-            if ((output == '') | (output == b''))\
-                 & (process.poll() is not None):
-                break
-            if output:
-                Logger.log.debug('AWSCLI:'+output.strip().replace('\r','\r\n'))
-        Logger.log.debug('DONE!')
-        rc = process.poll()
-        return rc==0
 
     def save(self,save_excel=False):
         tini = time.time()
