@@ -1,6 +1,5 @@
 import os
 import subprocess
-
 from SharedData.Logger import Logger
 
 
