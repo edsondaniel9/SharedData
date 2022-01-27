@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 
 class Logger:
 
+    streamName = 'deepportfolio-logs'
+
     def __init__(self, source):
         self.source = source
 
@@ -51,7 +53,7 @@ class Logger:
         fhandler.setFormatter(formatter)
         self.log.addHandler(fhandler)
         #log to aws kinesis
-        kinesishandler = KinesisFirehoseDeliveryStreamHandler()
+        kinesishandler = KinesisStreamHandler()
         kinesishandler.setLevel(loglevel)    
         jsonformatter = JsonFormatter(os.environ['USERNAME']+'@'+os.environ['USERDOMAIN'] + 
             ';%(asctime)s;%(name)s;%(levelname)s;%(message)s',\
@@ -79,31 +81,43 @@ class Logger:
                 pass
         return df
 
+class KinesisStreamHandler(logging.StreamHandler):
+    #reference: https://docs.python.org/3/library/logging.html#logging.LogRecord
 
-class KinesisFirehoseDeliveryStreamHandler(logging.StreamHandler):
 
    def __init__(self):
        # By default, logging.StreamHandler uses sys.stderr if stream parameter is not specified
        logging.StreamHandler.__init__(self)
 
-       self.__firehose = None
+       self.__datastream = None
        self.__stream_buffer = []
 
        try:
            session = boto3.Session(profile_name='kinesis-logs-write-only')
-           self.__firehose = session.client('firehose')
+           self.__datastream = session.client('kinesis')
        except Exception:
-           print('Firehose client initialization failed.')
+           print('Kinesis client initialization failed.')
 
-       self.__delivery_stream_name = "PUT-S3-Logs"
+       self.__stream_name = Logger.streamName
 
    def emit(self, record):
        try:
-           msg = self.format(record)
+           #msg = self.format(record)
+           user = os.environ['USERNAME']+'@'+os.environ['USERDOMAIN']
+           msg = {
+                'user_name': user,
+                'asctime': record.asctime,
+                'logger_name': record.name,
+                'level': record.levelname,
+                'message': record.msg,
+                'function_name': record.funcName,
+                'file_name': record.filename,                
+            }   
 
-           if self.__firehose:
+           if self.__datastream:
                self.__stream_buffer.append({
-                   'Data': msg.encode(encoding="UTF-8", errors="strict")
+                   'Data': str(msg).encode(encoding="UTF-8", errors="strict"),
+                   'PartitionKey' : user,
                })
            else:
                stream = self.stream
@@ -118,10 +132,10 @@ class KinesisFirehoseDeliveryStreamHandler(logging.StreamHandler):
        self.acquire()
 
        try:
-           if self.__firehose and self.__stream_buffer:
-               self.__firehose.put_record_batch(
-                   DeliveryStreamName=self.__delivery_stream_name,
-                   Records=self.__stream_buffer
+           if self.__datastream and self.__stream_buffer:
+               self.__datastream.put_records(
+                   StreamName=self.__stream_name,
+                   Records=self.__stream_buffer                   
                )
 
                self.__stream_buffer.clear()

@@ -6,7 +6,7 @@ import time
 import subprocess
 
 from SharedData.Logger import Logger
-from SharedData.AWS import S3SyncDownloadMetadata
+from SharedData.SharedDataAWS import S3SyncDownloadMetadata
 
 class Metadata():
     
@@ -57,7 +57,6 @@ class Metadata():
                 self.symbols = self.symbols.set_index(self.symbols.columns[0])
             Logger.log.debug('%.2f done!' % (time.time()-tini))
 
-
     def save(self,save_excel=False):
         tini = time.time()
         Logger.log.debug('Saving symbols collection ' + self.name + ' ...')  
@@ -74,7 +73,8 @@ class Metadata():
             if not self.symbols.empty:
                 self.symbols.to_excel(writer,sheet_name='symbols')
             writer.save()        
-        self.debug('%.2f done!' % (time.time()-tini))
+        Logger.log.debug('Saving symbols collection ' + self.name + \
+            '%.2f done!' % (time.time()-tini))
     
     def mergeUpdate(self,newdf):
         ddidx = newdf.index.duplicated()

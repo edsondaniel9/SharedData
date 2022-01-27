@@ -1,6 +1,9 @@
 import os
 import subprocess
+import boto3
+
 from SharedData.Logger import Logger
+
 
 
 def S3SyncDownloadTimeSeries(path,shm_name):    
@@ -63,3 +66,16 @@ def S3SyncDownloadMetadata(pathpkl,name):
     Logger.log.debug('AWS sync download metadata %s DONE!' % (name))
     rc = process.poll()
     return rc==0
+
+def S3Upload(localfilepath):
+    Logger.log.debug('Uploading to S3 '+localfilepath+' ...')
+    try:
+        remotefilepath = localfilepath.replace(\
+            os.environ['DATABASE_FOLDER'],os.environ['S3_BUCKET'])         
+        session = boto3.Session(profile_name='s3readwrite')   
+        s3 = session.resource('s3')
+        s3.Bucket(os.environ['S3_BUCKET']).upload_file(localfilepath,remotefilepath)
+        Logger.log.debug('Uploading to S3 '+localfilepath+' DONE!')
+    except Exception as e:
+        Logger.log.error('Uploading to S3 '+localfilepath+' ERROR! %s' % str(e))
+        

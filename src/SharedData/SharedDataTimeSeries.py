@@ -13,7 +13,7 @@ from subprocess import run, PIPE
 import boto3
 
 from SharedData.Logger import Logger
-from SharedData.AWS import S3SyncDownloadTimeSeries
+from SharedData.SharedDataAWS import S3SyncDownloadTimeSeries
 
 class SharedDataTimeSeries:
 
@@ -245,7 +245,6 @@ class SharedDataTimeSeries:
                     (self.feeder,self.period,self.tag,100,time.time()-tini))      
         return False
       
-
     def Read(self):   
         path, shm_name = self.getDataPath()        
         years = [int(x.stem) for x in path.glob('*.npy') if x.is_file()]
@@ -324,13 +323,3 @@ class SharedDataTimeSeries:
         Logger.log.debug('Writing %s/%s/%s from %s ...%.2f%% %.2f sec!' % \
             (self.feeder,self.period,self.tag,startdatestr,100*cy/ny,time.time()-tini))        
         
-    def S3SyncUpload(self,localfilepath):
-        Logger.debug('Uploading to S3 '+localfilepath+' ...')
-        try:
-            remotefilepath = localfilepath.replace(\
-                os.environ['DATABASE_FOLDER'],os.environ['S3_BUCKET'])            
-            s3 = boto3.resource('s3')
-            s3.Bucket(os.environ['S3_BUCKET']).upload_file(localfilepath,remotefilepath)
-            Logger.debug('Uploading to S3 SUCESS!')
-        except Exception as e:
-            Logger.error('Uploading to S3 ERROR!')
