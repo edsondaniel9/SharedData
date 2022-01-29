@@ -27,13 +27,17 @@ def S3SyncDownloadTimeSeries(path,shm_name):
                 latchcompleted = False
                 Logger.log.debug('AWSCLI:'+_output)                    
             latchcompleted = ('Completed' in _output)                
-    Logger.log.debug('AWS sync download timeseries %s DONE!' % (shm_name))    
     rc = process.poll()
-    return rc==0        
+    success= rc==0
+    if success:
+        Logger.log.debug('Sync timeseries %s DONE!' % (shm_name))
+    else:
+        Logger.log.error('Sync timeseries %s ERROR!' % (shm_name))
+    return success
 
 
 def S3SyncDownloadMetadata(pathpkl,name):
-    Logger.log.debug('AWS sync download metadata %s...' % (name))
+    Logger.log.debug('Sync metadata %s...' % (name))
     folder=str(pathpkl.parents[0]).replace(\
         os.environ['DATABASE_FOLDER'],'')
     folder = folder.replace('\\','/')+'/'
@@ -62,10 +66,13 @@ def S3SyncDownloadMetadata(pathpkl,name):
                 latchcompleted = False
                 Logger.log.debug('AWSCLI:'+_output)                    
             latchcompleted = ('Completed' in _output)           
-
-    Logger.log.debug('AWS sync download metadata %s DONE!' % (name))
     rc = process.poll()
-    return rc==0
+    success= rc==0
+    if success:
+        Logger.log.debug('Sync metadata %s DONE!' % (name))
+    else:
+        Logger.log.error('Sync metadata %s ERROR!' % (name))
+    return success
 
 def S3Upload(localfilepath):
     Logger.log.debug('Uploading to S3 '+localfilepath+' ...')

@@ -17,15 +17,18 @@ import os
 Logger.log.info(os.environ['LOG_PATH'])
 Logger.log.info('environment variables loaded!')
 
-
 from SharedData.SharedData import SharedData
 
 shdata = SharedData('MarketData',s3read=True,s3write=False)
 shdata.dataset
 
 data = shdata['MASTER']['D1']
-data['m2m']['ES_S01@XCME'].tail(2520).plot()
-data['ret']['ES_S01@XCME'].tail(2520).hist(bins=50)
+symbol = 'ES_S01@XCME'
+symbol = 'DI1_S10@BVMF'
+data['m2m'][symbol].tail(2520).plot()
+data['m2m'][symbol].tail(25)
+
+data['ret'][symbol].tail(2520).hist(bins=50)
 
 
 from SharedData.Metadata import Metadata

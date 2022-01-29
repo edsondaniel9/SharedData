@@ -21,8 +21,7 @@
 <ul>
 <li>SOURCE_FOLDER=C:\src\SharedData\src</li>
 <li>PYTHONPATH=${SOURCE_FOLDER}</li>
-<li>DATABASE_FOLDER=C:\DB\files</li>
-<li>DOWNLOADS_FOLDER=D:\DOWNLOADS</li>
+<li>DATABASE_FOLDER=C:\DB</li>
 <li>LOG_LEVEL=DEBUG</li>
 <li>AWSCLI_PATH=C:\Program Files\Amazon\AWSCLIV2\aws.exe</li>
 <li>S3_BUCKET=[S3_BUCKET]</li>
