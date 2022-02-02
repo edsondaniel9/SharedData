@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 class Logger:
 
     streamName = 'deepportfolio-logs'
+    log = None
 
     def __init__(self, source):
         self.source = source
@@ -83,8 +84,6 @@ class Logger:
 
 class KinesisStreamHandler(logging.StreamHandler):
     #reference: https://docs.python.org/3/library/logging.html#logging.LogRecord
-
-
    def __init__(self):
        # By default, logging.StreamHandler uses sys.stderr if stream parameter is not specified
        logging.StreamHandler.__init__(self)

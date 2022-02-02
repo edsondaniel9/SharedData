@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -10,10 +11,23 @@ from SharedData.SharedDataAWS import S3SyncDownloadMetadata
 
 class Metadata():
     
-    def __init__(self, name, s3read=False, s3write=False):
+    def __init__(self, name, mode='rw'):
+        if Logger.log is None:
+            load_dotenv()  # take environment variables from .env.
+            Logger(os.environ('PYTHONPATH')+'\Metadata.py')
+                
+        if mode == 'local':
+            self.s3read = False
+            self.s3write = False
+        elif mode == 'r':
+            self.s3read = True
+            self.s3write = False
+        elif mode == 'rw':
+            self.s3read = True
+            self.s3write = True
+        
+
         self.name = name
-        self.s3read = s3read
-        self.s3write = s3write
         self.xls = {}
         self.static = pd.DataFrame([])        
         self.symbols = pd.DataFrame([],dtype=str)

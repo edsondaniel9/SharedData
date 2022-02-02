@@ -15,18 +15,15 @@ def S3SyncDownloadTimeSeries(path,shm_name):
         #'--delete',\
         '--exclude=shm_info.json'],\
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-    latchcompleted=False #dont display sequenced messages starting with "Completed"
+    
     while True:
         output = process.stdout.readline()
         if ((output == '') | (output == b''))\
                 & (process.poll() is not None):
-            break            
-        if output:                                
-            _output=output.strip().replace('\r','\r\n')
-            if not latchcompleted:
-                latchcompleted = False
-                Logger.log.debug('AWSCLI:'+_output)                    
-            latchcompleted = ('Completed' in _output)                
+            break    
+        if (output) and not (output.startswith('Completed')):
+            Logger.log.debug('AWSCLI:'+output.strip())        
+
     rc = process.poll()
     success= rc==0
     if success:
@@ -54,18 +51,15 @@ def S3SyncDownloadMetadata(pathpkl,name):
         '--include',name.split('/')[-1]+'.xlsx'],\
         #'--delete'],\
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)        
-    latchcompleted=False #dont display sequenced messages starting with "Completed"
+    
     while True:
         output = process.stdout.readline()
         if ((output == '') | (output == b''))\
                 & (process.poll() is not None):
-            break
-        if output:
-            _output=output.strip().replace('\r','\r\n')
-            if not latchcompleted:
-                latchcompleted = False
-                Logger.log.debug('AWSCLI:'+_output)                    
-            latchcompleted = ('Completed' in _output)           
+            break        
+        if (output) and not (output.startswith('Completed')):
+            Logger.log.debug('AWSCLI:'+output.strip())  
+            
     rc = process.poll()
     success= rc==0
     if success:
