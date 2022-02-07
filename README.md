@@ -10,10 +10,10 @@
 
 ### create virtual environment
 <li>enter command: pip -m venv venv</li>
-<li>activate virtual environnment (venv/Scripts/activate.bat)</li>
+<li>activate virtual environnment (venv\Scripts\activate.bat)</li>
 
 ### install requirements
-<li>enter command: pip install - r requirements.txt</li>
+<li>enter command: pip install -r requirements.txt</li>
 <li>install bpapi > python -m pip install --index-url=https://bcms.bloomberg.com/pip/simple </li>
 </ul>
 

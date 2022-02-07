@@ -8,9 +8,9 @@ from numba import jit
 from pandas.tseries.offsets import BDay
 from pathlib import Path
 from multiprocessing import shared_memory
-import subprocess
+
 from subprocess import run, PIPE
-import boto3
+from datetime import datetime, timedelta
 
 from SharedData.Logger import Logger
 from SharedData.SharedDataAWS import S3SyncDownloadTimeSeries
@@ -62,7 +62,19 @@ class SharedDataTimeSeries:
             if isCreate:
                 if self.sharedData.s3read:
                     path, shm_name = self.getDataPath()
-                    S3SyncDownloadTimeSeries(path, shm_name)
+                    path = str(path)
+                    lastsync = self.sharedData.lastsync
+                    if not path in lastsync.index:
+                        S3SyncDownloadTimeSeries(path, shm_name)
+                        lastsync.loc[path,'timestamp'] = datetime.utcnow()
+                        lastsync.index.name = 'file'
+                        lastsync.to_csv(self.sharedData.lastsyncfpath)
+                    else:
+                        td = (datetime.utcnow() - lastsync['timestamp'][path]).seconds/86400
+                        if td>self.sharedData.sync_frequency_days:
+                            S3SyncDownloadTimeSeries(path, shm_name)
+                            lastsync.loc[path,'timestamp'] = datetime.utcnow()
+                            lastsync.to_csv(self.sharedData.lastsyncfpath)
                 self.Read()                
         
         else: # map existing dataframe

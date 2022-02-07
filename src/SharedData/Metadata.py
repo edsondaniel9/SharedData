@@ -15,7 +15,9 @@ class Metadata():
         if Logger.log is None:
             load_dotenv()  # take environment variables from .env.
             Logger(os.environ('PYTHONPATH')+'\Metadata.py')
-                
+
+        Logger.log.debug('Initializing Metadata %s,%s' % (name,mode))
+
         if mode == 'local':
             self.s3read = False
             self.s3write = False
@@ -70,6 +72,8 @@ class Metadata():
             if not self.symbols.empty:
                 self.symbols = self.symbols.set_index(self.symbols.columns[0])
             Logger.log.debug('%.2f done!' % (time.time()-tini))
+        
+        Logger.log.debug('Metadata initialized!')
 
     def save(self,save_excel=False):
         tini = time.time()

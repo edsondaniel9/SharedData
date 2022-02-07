@@ -1,16 +1,14 @@
 import os
 import subprocess
 import boto3
+import awscli
 
 from SharedData.Logger import Logger
 
-
-
 def S3SyncDownloadTimeSeries(path,shm_name):    
-    Logger.log.debug('AWS sync download timeseries %s...' % (shm_name))       
-    awsclipath = os.environ['AWSCLI_PATH']
+    Logger.log.debug('AWS sync download timeseries %s...' % (shm_name))           
     awsfolder = os.environ['S3_BUCKET']+'/'+shm_name+'/' 
-    process = subprocess.Popen([awsclipath,'s3','sync',awsfolder,str(path),\
+    process = subprocess.Popen(['aws','s3','sync',awsfolder,path,\
         '--profile','s3readonly',\
         #'--delete',\
         '--exclude=shm_info.json'],\

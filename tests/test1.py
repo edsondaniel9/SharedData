@@ -47,3 +47,12 @@ md.static.columns
 md = Metadata('CURVES/DI1')
 md.static
 
+shsignals = SharedData('Signals')
+shsignals.dataset
+
+ircurve = shsignals['IR_CURVES']['D1']
+dv01 = ircurve['dv01']
+dv01.loc[dv01.last_valid_index()]
+
+scnd_implrate = ircurve['scnd_implrate']
+scnd_implrate.loc[scnd_implrate.last_valid_index()]
