@@ -15,7 +15,7 @@ from SharedData.SharedDataAWSKinesis import KinesisStreamHandler
 class Logger:
 
     log = None
-    DATABASE_FOLDER = 'C:/DB'
+    DATABASE_FOLDER = os.path.expanduser("~")+'\DB'
 
     def __init__(self, source):
         self.source = source

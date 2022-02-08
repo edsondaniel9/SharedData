@@ -12,6 +12,8 @@ import pytz
 from SharedData.Logger import Logger
 
 S3_BUCKET='s3://deepportfolio'
+if not 'S3_BUCKET' in os.environ:
+    os.environ['S3_BUCKET'] = S3_BUCKET
 
 def S3SyncDownloadDataFrame(path,shm_name):
     Logger.log.debug('AWS S3 Sync DataFrame %s...' % (shm_name))
@@ -73,6 +75,7 @@ def S3SyncDownloadTimeSeries(path,shm_name):
     return success
 
 def S3SyncDownloadMetadata(pathpkl,name):
+    
     Logger.log.debug('AWS S3 Sync metadata %s...' % (name))
     folder=str(pathpkl.parents[0]).replace(\
         os.environ['DATABASE_FOLDER'],'')
