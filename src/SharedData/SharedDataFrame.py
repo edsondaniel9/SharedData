@@ -9,12 +9,14 @@ from numba import jit
 from pandas.tseries.offsets import BDay
 from pathlib import Path
 from multiprocessing import shared_memory
+from datetime import datetime, timedelta
 
 from SharedData.Logger import Logger
+from SharedData.SharedDataAWSS3 import S3SyncDownloadDataFrame,S3Upload
 
 class SharedDataFrame:
 
-    def __init__(self, sharedDataPeriod, tag, df=None, malloc=True):    
+    def __init__(self, sharedDataPeriod, tag, df=None):    
         self.sharedDataPeriod = sharedDataPeriod
         self.tag = tag
         self.tagstr = self.tag.strftime('%Y%m%d%H%M')
@@ -22,6 +24,7 @@ class SharedDataFrame:
         self.sharedDataFeeder = sharedDataPeriod.sharedDataFeeder
         self.feeder = sharedDataPeriod.sharedDataFeeder.feeder
         self.sharedData = sharedDataPeriod.sharedDataFeeder.sharedData
+        self.database = self.sharedData.database
 
         self.period = sharedDataPeriod.period
         self.periodSeconds = sharedDataPeriod.periodSeconds               
@@ -29,16 +32,32 @@ class SharedDataFrame:
         # Time series dataframe
         self.data = pd.DataFrame()
                         
-        if df is None: #Read dataset tag  
-            if malloc:          
-                #allocate memory
-                isCreate = self.Malloc()
-                if not isCreate:
+        if df is None: #Read dataset tag                                
+            #allocate memory
+            isCreatedOrMapped = self.Malloc()
+            if not isCreatedOrMapped:
+                if self.sharedData.s3read:
+                    #Synchronize S3                
+                    path, shm_name = self.getDataPath()
+                    # Sync download S3 files
+                    lastsync = self.sharedData.lastsync
+                    if not shm_name in lastsync.index:
+                        S3SyncDownloadDataFrame(path, shm_name)
+                        lastsync.loc[shm_name,'timestamp'] = datetime.utcnow()
+                        lastsync.index.name = 'file'
+                        lastsync.to_csv(self.sharedData.lastsyncfpath)
+                    else:
+                        td = (datetime.utcnow() - lastsync['timestamp'][shm_name]).seconds/86400
+                        if td>self.sharedData.sync_frequency_days:
+                            S3SyncDownloadDataFrame(path, shm_name)
+                            lastsync.loc[shm_name,'timestamp'] = datetime.utcnow()
+                            lastsync.to_csv(self.sharedData.lastsyncfpath)       
+                    
+                    # Read
                     df = self.Read()
                     if not df.empty:
                         self.Malloc(df)
-            else:
-                self.data = self.Read()
+            
         else: # map existing dataframe   
             #drop non number fields   
             df = df._get_numeric_data().astype(np.float64)
@@ -49,18 +68,24 @@ class SharedDataFrame:
     def getDataPath(self):        
         shm_name = self.sharedData.database
         shm_name = shm_name + '/' + self.sharedDataFeeder.feeder
-        shm_name = shm_name + '/' + self.period + '/' + self.tag
+        shm_name = shm_name + '/' + self.period + '/' + self.tagstr
+        shm_name = shm_name.replace('\\','/')
+
         path = Path(os.environ['DATABASE_FOLDER'])
-        path =  path / shm_name        
+        path = path / self.sharedData.database
+        path = path / self.sharedDataFeeder.feeder
+        path = path  /  self.period 
+        path = Path(str(path).replace('\\','/'))
         if not os.path.isdir(path):
             os.makedirs(path)
+
         return path, shm_name
 
     # C R U D
     def Malloc(self, df=None):
         tini=time.time()
-        Logger.log.debug('Malloc %s/%s/%s ...%.2f%% ' % \
-            (self.feeder,self.period,self.tagstr,0.0))      
+        Logger.log.debug('Malloc %s/%s/%s/%s ...%.2f%% ' % \
+            (self.database,self.feeder,self.period,self.tagstr,0.0))      
 
         #Create write ndarray
         path, shm_name = self.getDataPath()
@@ -92,8 +117,8 @@ class SharedDataFrame:
                         }
                     json.dump(shm_info, outfile, indent=3)
 
-                Logger.log.debug('Malloc create %s/%s/%s ...%.2f%% %.2f sec! ' % \
-                    (self.feeder,self.period,self.tagstr,100,time.time()-tini))                
+                Logger.log.debug('Malloc create %s/%s/%s/%s ...%.2f%% %.2f sec! ' % \
+                    (self.database,self.feeder,self.period,self.tagstr,100,time.time()-tini))                
                 return True
             except:
                 trymap=True
@@ -122,8 +147,8 @@ class SharedDataFrame:
                         icol = df.columns.intersection(self.data.columns)
                         self.data.loc[iidx, icol] = df.loc[iidx, icol].copy()
                                             
-                    Logger.log.debug('Malloc map %s/%s/%s ...%.2f%% %.2f sec! ' % \
-                        (self.feeder,self.period,self.tagstr,100,time.time()-tini))                    
+                    Logger.log.debug('Malloc map %s/%s/%s/%s ...%.2f%% %.2f sec! ' % \
+                        (self.database,self.feeder,self.period,self.tagstr,100,time.time()-tini))                    
                     return True
                 except:
                     return False
@@ -153,19 +178,19 @@ class SharedDataFrame:
                         index=_index,\
                         columns=_columns)
 
-                    Logger.log.debug('Reading %s/%s/%s ...%.2f%% %.2f sec! ' % \
-                        (self.feeder,self.period,self.tagstr,100,time.time()-tini))
+                    Logger.log.debug('Reading %s/%s/%s/%s ...%.2f%% %.2f sec! ' % \
+                        (self.database,self.feeder,self.period,self.tagstr,100,time.time()-tini))
                     return df
                 except:
                     pass
-                    Logger.log.error('File corrupted %s/%s/%s ...%.2f%% %.2f sec! ' % \
-                        (self.feeder,self.period,self.tagstr,100,time.time()-tini))                
+                    Logger.log.error('File corrupted %s/%s/%s/%s ...%.2f%% %.2f sec! ' % \
+                        (self.database,self.feeder,self.period,self.tagstr,100,time.time()-tini))                
         return pd.DataFrame([])
 
     def Write(self,startDate=[]):
         tini = time.time()
-        Logger.log.debug('Writing %s/%s  ...%.2f%% ' % \
-            (self.period,self.tagstr,0.0))        
+        Logger.log.debug('Writing %s/%s/%s/%s  ...%.2f%% ' % \
+            (self.database,self.feeder,self.period,self.tagstr,0.0))        
 
         path, shm_name = self.getDataPath()
         jsonpath = path / (self.tagstr+'.json')
@@ -177,9 +202,13 @@ class SharedDataFrame:
                 'columns': self.data.columns.values.tolist()                                 
                 }
             json.dump(shm_info, outfile, indent=3)
+            if self.sharedData.s3write:
+                S3Upload(jsonpath)
         
         np.save(str(npypath),self.data.values.astype(np.float64))
+        if self.sharedData.s3write:
+            S3Upload(npypath)
 
-        Logger.log.debug('Writing %s/%s ...%.2f%% %.2f sec!' % \
-            (self.period,self.tagstr,100,time.time()-tini))
+        Logger.log.debug('Writing %s/%s/%s/%s ...%.2f%% %.2f sec!' % \
+            (self.database,self.feeder,self.period,self.tagstr,100,time.time()-tini))
         

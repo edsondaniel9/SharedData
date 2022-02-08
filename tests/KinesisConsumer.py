@@ -7,12 +7,11 @@ import os
 from pathlib import Path
 import pandas as pd
 
-from SharedData.Logger import Logger,KinesisStreamConsumer
+from SharedData.Logger import Logger
+from SharedData.SharedDataAWSKinesis import KinesisStreamConsumer
 
-streamName = 'deepportfolio-logs'
-profileName = 'kinesis-logs-write-only'
-
-
+logger = Logger(__file__)
+Logger.log.info('Starting Kinesis Stream Consumer Loop')
 consumer = KinesisStreamConsumer()
 dflogs = consumer.readLogs()
 stream = consumer.connect()

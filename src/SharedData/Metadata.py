@@ -7,7 +7,7 @@ import time
 import subprocess
 
 from SharedData.Logger import Logger
-from SharedData.SharedDataAWS import S3SyncDownloadMetadata
+from SharedData.SharedDataAWSS3 import S3SyncDownloadMetadata
 
 class Metadata():
     

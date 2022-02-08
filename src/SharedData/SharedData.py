@@ -7,7 +7,10 @@ from SharedData.SharedDataFeeder import SharedDataFeeder
 from SharedData.Metadata import Metadata
 from SharedData.Logger import Logger
 
+
 class SharedData:
+    
+    DATABASE_FOLDER='C:\DB'    
 
     def __init__(self, database, mode='rw', sync_frequency_days=1):
         if Logger.log is None:

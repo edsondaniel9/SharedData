@@ -13,7 +13,7 @@ from subprocess import run, PIPE
 from datetime import datetime, timedelta
 
 from SharedData.Logger import Logger
-from SharedData.SharedDataAWS import S3SyncDownloadTimeSeries
+from SharedData.SharedDataAWSS3 import S3SyncDownloadTimeSeries,S3Upload
 
 class SharedDataTimeSeries:
 
@@ -63,6 +63,7 @@ class SharedDataTimeSeries:
                 if self.sharedData.s3read:
                     path, shm_name = self.getDataPath()
                     path = str(path)
+                    # Sync download S3 files
                     lastsync = self.sharedData.lastsync
                     if not path in lastsync.index:
                         S3SyncDownloadTimeSeries(path, shm_name)
@@ -183,13 +184,13 @@ class SharedDataTimeSeries:
     # C R U D
     def Malloc(self, value=None):
         tini=time.time()
-        Logger.log.debug('Malloc %s/%s/%s ...%.2f%% ' % \
-            (self.feeder,self.period,self.tag,0.0))        
+        
 
         #Create write ndarray
         path, shm_name = self.getDataPath()
         fpath = path / ('shm_info.json')
 
+        Logger.log.debug('Malloc %s ...%.2f%% ' % (shm_name,0.0))
         try: # try create memory file
             rows = len(self.index)
             cols = len(self.columns)
@@ -222,8 +223,8 @@ class SharedDataTimeSeries:
                     }
                 json.dump(shm_info, outfile, indent=3)
 
-            Logger.log.debug('Malloc create %s/%s/%s ...%.2f%% %.2f sec! ' % \
-                (self.feeder,self.period,self.tag,100,time.time()-tini))            
+            Logger.log.debug('Malloc create %s ...%.2f%% %.2f sec! ' % \
+                (shm_name,100,time.time()-tini))            
 
             return True
         except:
@@ -267,8 +268,7 @@ class SharedDataTimeSeries:
         nfiles = len(files.index)
         if nfiles>0:
             tini=time.time() 
-            Logger.log.debug('Reading %s/%s/%s ...%.2f%% ' % \
-                (self.feeder,self.period,self.tag,0.0))   
+            Logger.log.debug('Reading %s ...%.2f%% ' % (shm_name,0.0))   
             n=0
             for f in files.index:
                 fpath=files.loc[f,'fpath']            
@@ -287,8 +287,8 @@ class SharedDataTimeSeries:
                     self.setValuesJit(self.data.values,tidx,sidx,arr[:,1:])
                 n=n+1                
 
-            Logger.log.debug('Reading %s/%s/%s ...%.2f%% %.2f sec! ' % \
-                (self.feeder,self.period,self.tag,100*(n/nfiles),time.time()-tini))
+            Logger.log.debug('Reading %s ...%.2f%% %.2f sec! ' % \
+                (shm_name,100*(n/nfiles),time.time()-tini))
 
     def Write(self, busdays=None, startDate=None):
         tini = time.time()
@@ -302,13 +302,14 @@ class SharedDataTimeSeries:
         if not startDate is None:
             lastdate = startDate
         
-        startdatestr = lastdate.strftime('%Y-%m-%d')
-        Logger.log.debug('Writing %s/%s/%s from %s ...%.2f%% ' % \
-            (self.feeder,self.period,self.tag,startdatestr,0.0))
-        
         path, shm_name = self.getDataPath()        
         if not os.path.isdir(path):
             os.makedirs(path)        
+
+        startdatestr = lastdate.strftime('%Y-%m-%d')
+        Logger.log.debug('Writing %s from %s ...%.2f%% ' % \
+            (shm_name,startdatestr,0.0))
+        
             
         years = self.data.loc[lastdate:,:].index.year.unique()
         ny = len(years)
@@ -328,10 +329,10 @@ class SharedDataTimeSeries:
                 with open(fpath_csv, 'w') as f:
                     f.write(cols)
                 if self.sharedData.s3write:
-                    self.S3SyncUpload(fpath_npy)
-                    self.S3SyncUpload(fpath_csv)
+                    S3Upload(fpath_npy)
+                    S3Upload(fpath_csv)
                 cy=cy+1      
 
-        Logger.log.debug('Writing %s/%s/%s from %s ...%.2f%% %.2f sec!' % \
-            (self.feeder,self.period,self.tag,startdatestr,100*cy/ny,time.time()-tini))        
+        Logger.log.debug('Writing %s from %s ...%.2f%% %.2f sec!' % \
+            (shm_name,startdatestr,100*cy/ny,time.time()-tini))        
         
