@@ -26,3 +26,9 @@ ircurve = shsignals['IR_CURVES']['D1']
 dt = pd.Timestamp('2022-02-07')
 ircurve[dt] = df
 ircurve.tags[dt].Write()
+
+from SharedData.Metadata import Metadata
+
+md = Metadata('CARLITO/TEST')
+md.static = df
+md.save(save_excel=True)

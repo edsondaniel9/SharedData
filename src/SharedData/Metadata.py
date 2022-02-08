@@ -7,7 +7,7 @@ import time
 import subprocess
 
 from SharedData.Logger import Logger
-from SharedData.SharedDataAWSS3 import S3SyncDownloadMetadata
+from SharedData.SharedDataAWSS3 import S3SyncDownloadMetadata,S3Upload
 
 class Metadata():
     
@@ -81,16 +81,28 @@ class Metadata():
         if not os.path.isdir(self.pathpkl.parents[0]):
             os.makedirs(self.pathpkl.parents[0])                          
         self.static.to_pickle(self.pathpkl)
+        if self.s3write:
+            S3Upload(self.pathpkl)
+
         if not self.symbols.empty:
             self.symbols.to_pickle(self.pathsymbols)
+            if self.s3write:
+                S3Upload(self.pathsymbols)
+
         if not self.series.empty:
             self.series.to_pickle(self.pathseries)
+            if self.s3write:
+                S3Upload(self.pathseries)
+
         if save_excel:
             writer = pd.ExcelWriter(self.pathxls, engine='xlsxwriter')            
             self.static.to_excel(writer,sheet_name='static')        
             if not self.symbols.empty:
                 self.symbols.to_excel(writer,sheet_name='symbols')
             writer.save()        
+            if self.s3write:
+                S3Upload(self.pathxls)
+
         Logger.log.debug('Saving symbols collection ' + self.name + \
             '%.2f done!' % (time.time()-tini))
     

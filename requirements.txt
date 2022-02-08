@@ -104,4 +104,5 @@ urllib3==1.26.8
 wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.2
+XlsxWriter==3.0.2
 zipp==3.7.0
