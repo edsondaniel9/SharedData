@@ -1,3 +1,4 @@
+from email.policy import default
 import os
 import logging
 import subprocess
@@ -10,10 +11,16 @@ import time
 import pytz
 import json
 
-STREAMNAME = 'deepportfolio-logs'
+
+STREAMNAME = 'deepportfolio-real-time'
 PROFILENAME = 'kinesis-logs-write-only'
 
-class KinesisStreamHandler(logging.StreamHandler):
+LOGSTREAMNAME = 'deepportfolio-logs'
+LOGPROFILENAME = 'kinesis-logs-write-only'
+
+
+# LOGS
+class KinesisLogStreamHandler(logging.StreamHandler):
     #reference: https://docs.python.org/3/library/logging.html#logging.LogRecord
     def __init__(self):
         # By default, logging.StreamHandler uses sys.stderr if stream parameter is not specified
@@ -23,14 +30,13 @@ class KinesisStreamHandler(logging.StreamHandler):
         self.__stream_buffer = []
 
         try:
-            session = boto3.Session(profile_name=PROFILENAME)
+            session = boto3.Session(profile_name=LOGPROFILENAME)
             self.__datastream = session.client('kinesis')
         except Exception:
             print('Kinesis client initialization failed.')
 
-        self.__stream_name = STREAMNAME
+        self.__stream_name = LOGSTREAMNAME
         
-
     def emit(self, record):
         try:
             #msg = self.format(record)
@@ -84,10 +90,10 @@ class KinesisStreamHandler(logging.StreamHandler):
 
             self.release()
 
-class KinesisStreamConsumer():
-    def __init__(self,STREAMNAME=STREAMNAME, PROFILENAME = PROFILENAME):
-        self.streaName=STREAMNAME
-        self.PROFILENAME=PROFILENAME
+class KinesisLogStreamConsumer():
+    def __init__(self,LOGSTREAMNAME=LOGSTREAMNAME, LOGPROFILENAME = LOGPROFILENAME):
+        self.LOGSTREAMNAME=LOGSTREAMNAME
+        self.LOGPROFILENAME=LOGPROFILENAME
         self.logfilepath = Path(os.environ['DATABASE_FOLDER']+'\\Logs\\')
         self.logfilepath = self.logfilepath / (datetime.utcnow().strftime('%Y%m%d')+'.log')
         self.lastlogfilepath = Path(os.environ['DATABASE_FOLDER']+'\\Logs\\')
@@ -107,9 +113,9 @@ class KinesisStreamConsumer():
         return self.dflogs
     
     def connect(self):                
-        session = boto3.Session(profile_name=self.PROFILENAME)
+        session = boto3.Session(profile_name=self.LOGPROFILENAME)
         self.client = session.client('kinesis')
-        self.stream = self.client.describe_stream(StreamName='deepportfolio-logs')
+        self.stream = self.client.describe_stream(StreamName=self.LOGSTREAMNAME)
         if self.stream and 'StreamDescription' in self.stream:
             self.stream = self.stream['StreamDescription']
             i=0    
@@ -164,4 +170,68 @@ class KinesisStreamConsumer():
                             print('Invalid record:'+str(e))
             time.sleep(1)
         
-    
+# REAL TIME
+class KinesisStreamProducer():
+    def __init__(self,STREAMNAME=STREAMNAME, PROFILENAME = PROFILENAME):
+        self.__datastream = None
+        self.__stream_buffer = []
+        try:
+            session = boto3.Session(profile_name=PROFILENAME)
+            self.__datastream = session.client('kinesis')
+        except Exception:
+            print('Kinesis client initialization failed.')
+        self.__stream_name = STREAMNAME
+
+    def produce(self, record, partitionkey):                
+        self.__stream_buffer.append({
+            'Data': str(record).encode(encoding="UTF-8", errors="strict"),
+            'PartitionKey' : partitionkey,
+        })
+        self.__datastream.put_records(
+                    StreamName=self.__stream_name,
+                    Records=self.__stream_buffer                   
+                )
+        self.__stream_buffer = []
+
+class KinesisStreamConsumer():
+    def __init__(self,STREAMNAME=STREAMNAME, PROFILENAME = PROFILENAME):
+        self.STREAMNAME=STREAMNAME
+        self.PROFILENAME=PROFILENAME        
+
+    def connect(self):                
+        session = boto3.Session(profile_name=self.PROFILENAME)
+        self.client = session.client('kinesis')
+        self.stream = self.client.describe_stream(StreamName=self.STREAMNAME)
+        if self.stream and 'StreamDescription' in self.stream:
+            self.stream = self.stream['StreamDescription']
+            i=0    
+            for i in range(len(self.stream['Shards'])):        
+                shardid = self.stream['Shards'][i]['ShardId']
+                shard_iterator = self.client.get_shard_iterator(
+                    StreamName=self.stream['StreamName'],
+                    ShardId=self.stream['Shards'][i]['ShardId'],                
+                    ShardIteratorType='LATEST'                
+                    )
+                self.stream['Shards'][i]['ShardIterator'] = shard_iterator['ShardIterator']
+        if self.stream['StreamStatus'] != 'ACTIVE':
+            raise Exception('Stream status %s' % (self.stream['StreamStatus']))
+        
+        return self.stream
+
+    def loop(self):                
+        while True:        
+            for i in range(len(self.stream['Shards'])):
+                response = self.client.get_records(\
+                    ShardIterator = self.stream['Shards'][i]['ShardIterator'],\
+                    Limit = 100)
+                self.stream['Shards'][i]['ShardIterator'] = response['NextShardIterator']
+                if len(response['Records'])> 0:
+                    for r in response['Records']:
+                        try:
+                            rec = r['Data'].decode(encoding="UTF-8", errors="strict")                        
+                            #rec = json.loads(rec.replace("\'", "\""))                            
+                            print(rec)
+                        except Exception as e:
+                            print('Invalid record:'+str(e))
+            time.sleep(1)
+     

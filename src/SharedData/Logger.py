@@ -10,7 +10,7 @@ import boto3
 
 from dotenv import load_dotenv
 
-from SharedData.SharedDataAWSKinesis import KinesisStreamHandler
+from SharedData.SharedDataAWSKinesis import KinesisLogStreamHandler
 
 class Logger:
 
@@ -65,7 +65,7 @@ class Logger:
         fhandler.setFormatter(formatter)
         self.log.addHandler(fhandler)
         #log to aws kinesis
-        kinesishandler = KinesisStreamHandler()
+        kinesishandler = KinesisLogStreamHandler()
         kinesishandler.setLevel(logging.DEBUG)
         jsonformatter = JsonFormatter(os.environ['USERNAME']+'@'+os.environ['USERDOMAIN'] + 
             ';%(asctime)s;%(name)s;%(levelname)s;%(message)s',\
