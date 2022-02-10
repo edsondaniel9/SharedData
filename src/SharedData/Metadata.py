@@ -12,9 +12,8 @@ from SharedData.SharedDataAWSS3 import S3SyncDownloadMetadata,S3Upload
 class Metadata():
     
     def __init__(self, name, mode='rw'):
-        if Logger.log is None:
-            load_dotenv()  # take environment variables from .env.
-            Logger(os.environ('PYTHONPATH')+'\Metadata.py')
+        if Logger.log is None:            
+            Logger('Metadata')
 
         Logger.log.debug('Initializing Metadata %s,%s' % (name,mode))
 

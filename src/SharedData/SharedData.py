@@ -3,21 +3,18 @@ from dotenv import load_dotenv
 from pathlib import Path
 import pandas as pd
 
+from SharedData.Logger import Logger
 from SharedData.SharedDataFeeder import SharedDataFeeder
 from SharedData.Metadata import Metadata
-from SharedData.Logger import Logger
-
 
 class SharedData:
     
-    DATABASE_FOLDER='C:\DB'    
-
     def __init__(self, database, mode='rw', sync_frequency_days=1):
-        if Logger.log is None:
-            load_dotenv()  # take environment variables from .env.
-            Logger(os.environ['PYTHONPATH']+'\SharedData.py')
+        if Logger.log is None:            
+            Logger('SharedData')
         
         Logger.log.debug('Initializing SharedData %s,%s' % (database,mode))
+        
         self.database = database
         self.sync_frequency_days = sync_frequency_days
 

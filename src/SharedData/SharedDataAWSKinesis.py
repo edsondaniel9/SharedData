@@ -1,4 +1,3 @@
-from email.policy import default
 import os
 import logging
 import subprocess
@@ -11,14 +10,6 @@ import time
 import pytz
 import json
 
-
-STREAMNAME = 'deepportfolio-real-time'
-PROFILENAME = 'kinesis-logs-write-only'
-
-LOGSTREAMNAME = 'deepportfolio-logs'
-LOGPROFILENAME = 'kinesis-logs-write-only'
-
-
 # LOGS
 class KinesisLogStreamHandler(logging.StreamHandler):
     #reference: https://docs.python.org/3/library/logging.html#logging.LogRecord
@@ -30,12 +21,12 @@ class KinesisLogStreamHandler(logging.StreamHandler):
         self.__stream_buffer = []
 
         try:
-            session = boto3.Session(profile_name=LOGPROFILENAME)
+            session = boto3.Session(profile_name=os.environ['LOG_PROFILENAME'])
             self.__datastream = session.client('kinesis')
         except Exception:
             print('Kinesis client initialization failed.')
 
-        self.__stream_name = LOGSTREAMNAME
+        self.__stream_name = os.environ['LOG_STREAMNAME']
         
     def emit(self, record):
         try:
@@ -91,9 +82,7 @@ class KinesisLogStreamHandler(logging.StreamHandler):
             self.release()
 
 class KinesisLogStreamConsumer():
-    def __init__(self,LOGSTREAMNAME=LOGSTREAMNAME, LOGPROFILENAME = LOGPROFILENAME):
-        self.LOGSTREAMNAME=LOGSTREAMNAME
-        self.LOGPROFILENAME=LOGPROFILENAME
+    def __init__(self):        
         self.logfilepath = Path(os.environ['DATABASE_FOLDER']+'\\Logs\\')
         self.logfilepath = self.logfilepath / (datetime.utcnow().strftime('%Y%m%d')+'.log')
         self.lastlogfilepath = Path(os.environ['DATABASE_FOLDER']+'\\Logs\\')
@@ -113,9 +102,9 @@ class KinesisLogStreamConsumer():
         return self.dflogs
     
     def connect(self):                
-        session = boto3.Session(profile_name=self.LOGPROFILENAME)
+        session = boto3.Session(profile_name=os.environ['LOG_PROFILENAME'])
         self.client = session.client('kinesis')
-        self.stream = self.client.describe_stream(StreamName=self.LOGSTREAMNAME)
+        self.stream = self.client.describe_stream(StreamName=os.environ['LOG_STREAMNAME'])
         if self.stream and 'StreamDescription' in self.stream:
             self.stream = self.stream['StreamDescription']
             i=0    
@@ -172,15 +161,17 @@ class KinesisLogStreamConsumer():
         
 # REAL TIME
 class KinesisStreamProducer():
-    def __init__(self,STREAMNAME=STREAMNAME, PROFILENAME = PROFILENAME):
+    def __init__(self,stream_name, profile_name):
+
+        self.__stream_name = stream_name
+        self.__profile_name = profile_name
         self.__datastream = None
         self.__stream_buffer = []
         try:
-            session = boto3.Session(profile_name=PROFILENAME)
+            session = boto3.Session(profile_name=self.__profile_name)
             self.__datastream = session.client('kinesis')
         except Exception:
             print('Kinesis client initialization failed.')
-        self.__stream_name = STREAMNAME
 
     def produce(self, record, partitionkey):                
         self.__stream_buffer.append({
@@ -194,14 +185,14 @@ class KinesisStreamProducer():
         self.__stream_buffer = []
 
 class KinesisStreamConsumer():
-    def __init__(self,STREAMNAME=STREAMNAME, PROFILENAME = PROFILENAME):
-        self.STREAMNAME=STREAMNAME
-        self.PROFILENAME=PROFILENAME        
+    def __init__(self,stream_name, profile_name):
+        self.__stream_name = stream_name
+        self.__profile_name = profile_name
 
     def connect(self):                
-        session = boto3.Session(profile_name=self.PROFILENAME)
+        session = boto3.Session(profile_name=self.__profile_name)
         self.client = session.client('kinesis')
-        self.stream = self.client.describe_stream(StreamName=self.STREAMNAME)
+        self.stream = self.client.describe_stream(StreamName=self.__stream_name)
         if self.stream and 'StreamDescription' in self.stream:
             self.stream = self.stream['StreamDescription']
             i=0    

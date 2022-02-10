@@ -7,7 +7,6 @@ import glob
 import pandas as pd
 from pythonjsonlogger.jsonlogger import JsonFormatter
 import boto3
-
 from dotenv import load_dotenv
 
 from SharedData.SharedDataAWSKinesis import KinesisLogStreamHandler
@@ -15,21 +14,27 @@ from SharedData.SharedDataAWSKinesis import KinesisLogStreamHandler
 class Logger:
 
     log = None
-    DATABASE_FOLDER = os.path.expanduser("~")+'\DB'
+        
+    load_dotenv()  # take environment variables from .env.
 
+    if not 'DATABASE_FOLDER' in os.environ:    
+        os.environ['DATABASE_FOLDER'] = os.path.expanduser("~")+'\DB' 
+
+    if not 'LOG_STREAMNAME' in os.environ:    
+        os.environ['LOG_STREAMNAME'] = 'deepportfolio-logs'
+
+    if not 'LOG_PROFILENAME' in os.environ:    
+        os.environ['LOG_PROFILENAME'] = 'kinesis-logs-write-only'
+    
     def __init__(self, source):
         self.source = source
-
-        load_dotenv()  # take environment variables from .env.
         
         if 'SOURCE_FOLDER' in os.environ:
             commompath = os.path.commonpath([source,os.environ['SOURCE_FOLDER']])
             source = source.replace(commompath,'')
+
         source = source.lstrip('\\').lstrip('/')
         source = source.replace('.py','')
-
-        if not 'DATABASE_FOLDER' in os.environ:
-            os.environ['DATABASE_FOLDER'] = Logger.DATABASE_FOLDER
 
         path = Path(os.environ['DATABASE_FOLDER'])
         path = path / 'Logs'
