@@ -1,12 +1,3 @@
-import re
-import boto3
-import json
-import time
-from datetime import datetime
-import os
-from pathlib import Path
-import pandas as pd
-
 from SharedData.Logger import Logger
 from SharedData.SharedDataAWSKinesis import KinesisLogStreamConsumer
 

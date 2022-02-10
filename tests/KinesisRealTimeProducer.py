@@ -1,4 +1,3 @@
-
 from xbbg import blp
 import json
 import pandas as pd
@@ -10,7 +9,6 @@ from SharedData.SharedDataAWSKinesis import KinesisStreamProducer
 logger = Logger(__file__)
 Logger.log.info('Starting Kinesis Stream Producer Loop')
 
-producer = KinesisStreamProducer()
 
 futchain = Metadata('BBG/FUT_CHAIN')
 futchain.static
@@ -22,6 +20,7 @@ activefuts = activefuts[[s in futchain.static.index for s in activefuts.values]]
 activefuts = pd.DataFrame(activefuts)
 activefuts.columns=['symbol']
 activefuts['bloombergsymbol'] = futchain.static.loc[activefuts['symbol']]['bloombergsymbol'].values
+
 data = {
     "TICKER": "SIOU2 COMDTY",
     "FIELD": "BID",
@@ -38,7 +37,7 @@ data = {
     "RT_PX_CHG_PCT_1D": 0.5555999875068665
 }
 
-#tickers = ['ESA INDEX','CLA COMDTY']
+producer = KinesisStreamProducer('deepportfolio-real-time','kinesis-logs-write-only')
 tickers = activefuts['bloombergsymbol'].values
 async for data in blp.live(tickers):        
     with open('data.txt','a+',encoding = 'utf-8') as f:        

@@ -1,11 +1,7 @@
-import re
-import boto3
-import json
-import time
-from datetime import datetime
-import os
-from pathlib import Path
-import pandas as pd
+from dotenv import load_dotenv
+load_dotenv()
+import os,sys
+sys.path.insert(0,os.environ['SOURCE_FOLDER'])
 
 from SharedData.Logger import Logger
 from SharedData.SharedDataAWSKinesis import KinesisStreamConsumer

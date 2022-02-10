@@ -16,7 +16,7 @@ if not 'S3_BUCKET' in os.environ:
     os.environ['S3_BUCKET'] = S3_BUCKET
 
 def S3SyncDownloadDataFrame(path,shm_name):
-    Logger.log.debug('AWS S3 Sync DataFrame %s...' % (shm_name))
+    Logger.log.debug('AWS S3 Sync DataFrame %s...' % (shm_name))    
 
     awsfolder = os.environ['S3_BUCKET']+'/'
     awsfolder = awsfolder+str(Path(shm_name).parents[0])
@@ -79,10 +79,12 @@ def S3SyncDownloadMetadata(pathpkl,name):
     Logger.log.debug('AWS S3 Sync metadata %s...' % (name))
     folder=str(pathpkl.parents[0]).replace(\
         os.environ['DATABASE_FOLDER'],'')
+    
     folder = folder.replace('\\','/')+'/'
     dbfolder = str(pathpkl.parents[0])
     dbfolder = dbfolder.replace('\\','/')+'/'
     awsfolder = os.environ['S3_BUCKET'] + folder
+
     process = subprocess.Popen(['aws','s3','sync',awsfolder,dbfolder,\
         '--profile','s3readonly',\
         '--exclude','*',\
@@ -108,6 +110,7 @@ def S3SyncDownloadMetadata(pathpkl,name):
         Logger.log.debug('AWS S3 Sync metadata %s DONE!' % (name))
     else:
         Logger.log.error('AWS S3 Sync metadata %s ERROR!' % (name))
+        Logger.log.error('AWS S3 Sync metadata \"%s\"' % (process.stderr.readlines()))
     return success
 
 
