@@ -17,6 +17,9 @@ load_dotenv()  # take environment variables from .env.
 if not 'DATABASE_FOLDER' in os.environ:    
     os.environ['DATABASE_FOLDER'] = os.path.expanduser("~")+'\DB' 
 
+if not 'S3_BUCKET' in os.environ:    
+    os.environ['S3_BUCKET'] = 's3://deepportfolio'
+
 if not 'LOG_STREAMNAME' in os.environ:    
     os.environ['LOG_STREAMNAME'] = 'deepportfolio-logs'
 

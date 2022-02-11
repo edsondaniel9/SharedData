@@ -1,6 +1,3 @@
-import sys
-sys.path.insert(0,'c:\\src\\SharedData\\src')
-print(sys.path)
 import matplotlib.pyplot as plt
 plt.style.use('default')
 import pandas as pd
@@ -39,60 +36,62 @@ symbol = 'DI1_S10@BVMF'
 symbol = 'ES_S01@XCME'
 fig = plt.figure()
 data['m2m'][symbol].tail(2520).plot()
+plt.show()
 fig = plt.figure()
 data['ret'][symbol].tail(2520).hist(bins=50)
+plt.show()
 print(data['m2m'][symbol].tail(25))
 print(data['ret'][symbol].tail(25))
 
-#PRIVATE MARKETDATA
-shdata = SharedData('MarketData/CARLITO')
-shdata.dataset
-data = shdata['MASTER']['D1']
-symbol = 'DI1_S10@BVMF'
-symbol = 'ES_S01@XCME'
-fig = plt.figure()
-data['m2m'][symbol].tail(2520).plot()
-fig = plt.figure()
-data['ret'][symbol].tail(2520).hist(bins=50)
-print(data['m2m'][symbol].tail(25))
-print(data['ret'][symbol].tail(25))
+# #PRIVATE MARKETDATA
+# shdata = SharedData('MarketData/CARLITO')
+# shdata.dataset
+# data = shdata['MASTER']['D1']
+# symbol = 'DI1_S10@BVMF'
+# symbol = 'ES_S01@XCME'
+# fig = plt.figure()
+# data['m2m'][symbol].tail(2520).plot()
+# fig = plt.figure()
+# data['ret'][symbol].tail(2520).hist(bins=50)
+# print(data['m2m'][symbol].tail(25))
+# print(data['ret'][symbol].tail(25))
 
-from SharedData.Metadata import Metadata
+# from SharedData.Metadata import Metadata
 
-md = Metadata('MASTER/FUT')
-md.static
-md.static.columns
-md.symbols
-md.series
+# md = Metadata('MASTER/FUT')
+# md.static
+# md.static.columns
+# md.symbols
+# md.series
 
-md = Metadata('MASTER/STOCK')
-md.static
-md.static.columns
+# md = Metadata('MASTER/STOCK')
+# md.static
+# md.static.columns
 
-md = Metadata('CURVES/DI1')
-md.static
+# md = Metadata('CURVES/DI1')
+# md.static
 
-# PUBLIC SIGNALS
-shsignals = SharedData('Signals')
-shsignals.dataset
+# # PUBLIC SIGNALS
+# shsignals = SharedData('Signals')
+# shsignals.dataset
 
-ircurve = shsignals['IR_CURVES']['D1']
-dv01 = ircurve['dv01']
-dv01.loc[dv01.last_valid_index()]
+# ircurve = shsignals['IR_CURVES']['D1']
+# dv01 = ircurve['dv01']
+# dv01.loc[dv01.last_valid_index()]
 
-scnd_implrate = ircurve['scnd_implrate']
-scnd_implrate.loc[scnd_implrate.last_valid_index()]
+# scnd_implrate = ircurve['scnd_implrate']
+# scnd_implrate.loc[scnd_implrate.last_valid_index()]
 
-# PRIVATE SIGNALS
-shsignals = SharedData('Signals/CARLITO')
-shsignals.dataset
+# # PRIVATE SIGNALS
+# shsignals = SharedData('Signals/CARLITO')
+# shsignals.dataset
 
-ircurve = shsignals['IR_CURVES']['D1']
-dv01 = ircurve['dv01']
-dv01.loc[dv01.last_valid_index()]
+# ircurve = shsignals['IR_CURVES']['D1']
+# dv01 = ircurve['dv01']
+# dv01.loc[dv01.last_valid_index()]
 
-scnd_implrate = ircurve['scnd_implrate']
-scnd_implrate.loc[scnd_implrate.last_valid_index()]
+# scnd_implrate = ircurve['scnd_implrate']
+# scnd_implrate.loc[scnd_implrate.last_valid_index()]
 
-ircurve[pd.Timestamp('2022-02-07')] = df
-ircurve
+# ircurve[pd.Timestamp('2022-02-07')] = df
+# ircurve

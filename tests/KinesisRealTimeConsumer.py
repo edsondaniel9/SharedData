@@ -1,8 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-import os,sys
-sys.path.insert(0,os.environ['SOURCE_FOLDER'])
-
 from SharedData.Logger import Logger
 from SharedData.SharedDataAWSKinesis import KinesisStreamConsumer
 

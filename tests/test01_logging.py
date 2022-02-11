@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 plt.style.use('default')
 import pandas as pd
 
-import sys
-print(sys.path)
-
+# import sys
+# print(sys.path)
+print(__file__)
 import os
-print(os.environ['PATH'])
+print(os.environ['PYTHONPATH'])
 
 from SharedData.Logger import Logger
 logger = Logger(__file__)

@@ -65,16 +65,16 @@ class SharedDataTimeSeries:
                     path = str(path)
                     # Sync download S3 files
                     lastsync = self.sharedData.lastsync
-                    if not path in lastsync.index:
+                    if not shm_name in lastsync.index:
                         S3SyncDownloadTimeSeries(path, shm_name)
-                        lastsync.loc[path,'timestamp'] = datetime.utcnow()
+                        lastsync.loc[shm_name,'timestamp'] = datetime.utcnow()
                         lastsync.index.name = 'file'
                         lastsync.to_csv(self.sharedData.lastsyncfpath)
                     else:
-                        td = (datetime.utcnow() - lastsync['timestamp'][path]).seconds/86400
+                        td = (datetime.utcnow() - lastsync['timestamp'][shm_name]).seconds/86400
                         if td>self.sharedData.sync_frequency_days:
                             S3SyncDownloadTimeSeries(path, shm_name)
-                            lastsync.loc[path,'timestamp'] = datetime.utcnow()
+                            lastsync.loc[shm_name,'timestamp'] = datetime.utcnow()
                             lastsync.to_csv(self.sharedData.lastsyncfpath)
                 self.Read()                
         

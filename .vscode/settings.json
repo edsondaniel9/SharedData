@@ -2,5 +2,7 @@
     "python.analysis.extraPaths": [
         "./src",
         "./tests"
-    ]
+    ],
+    "jupyter.notebookFileRoot": "${workspaceFolder}"
+
 }
