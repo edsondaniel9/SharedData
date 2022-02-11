@@ -11,10 +11,6 @@ import pytz
 
 from SharedData.Logger import Logger
 
-S3_BUCKET='s3://deepportfolio'
-if not 'S3_BUCKET' in os.environ:
-    os.environ['S3_BUCKET'] = S3_BUCKET
-
 def S3SyncDownloadDataFrame(path,shm_name):
     Logger.log.debug('AWS S3 Sync DataFrame %s...' % (shm_name))    
 
@@ -112,8 +108,6 @@ def S3SyncDownloadMetadata(pathpkl,name):
         Logger.log.error('AWS S3 Sync metadata %s ERROR!' % (name))
         Logger.log.error('AWS S3 Sync metadata \"%s\"' % (process.stderr.readlines()))
     return success
-
-
 
 def S3Upload(localfilepath):
     Logger.log.debug('Uploading to S3 '+str(localfilepath)+' ...')
