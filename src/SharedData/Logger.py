@@ -1,4 +1,4 @@
-import os
+import os,sys
 import logging
 import boto3
 from pathlib import Path
@@ -32,14 +32,15 @@ class Logger:
     log = None
 
     def __init__(self, source):
-        self.source = source
-        
+        os.environ['PATH'] = os.environ['PATH']+';'+';'.join(sys.path)
+                
         if 'SOURCE_FOLDER' in os.environ:
             commompath = os.path.commonpath([source,os.environ['SOURCE_FOLDER']])
             source = source.replace(commompath,'')
 
         source = source.lstrip('\\').lstrip('/')
         source = source.replace('.py','')
+        self.source = source
 
         path = Path(os.environ['DATABASE_FOLDER'])
         path = path / 'Logs'
@@ -95,11 +96,12 @@ class Logger:
         for f in files:
             source = f[lenlogsdir+1:].replace('.log','.py')
             try:
-                _df = pd.read_csv(f,header=None,sep=';')
+                _df = pd.read_csv(f,header=None,sep=';',\
+                    error_bad_lines=False,engine='python')
                 _df.columns = ['user','datetime','name','type','message']
                 _df['source'] = source
                 df = df.append(_df)
             except Exception as e:
-                print(e)
-                pass
+                print('Read logs error:'+str(e))
+
         return df

@@ -3,6 +3,6 @@
         "./src",
         "./tests"
     ],
-    "jupyter.notebookFileRoot": "${workspaceFolder}"
+    "jupyter.notebookFileRoot": "${workspaceFolder}/src"
 
 }

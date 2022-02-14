@@ -1,4 +1,4 @@
-import os
+import os,sys
 import logging
 import subprocess
 import boto3
@@ -19,6 +19,8 @@ def S3SyncDownloadDataFrame(path,shm_name):
     awsfolder = awsfolder.replace('\\','/')+'/'   
     dbfolder = str(path)
     dbfolder = dbfolder.replace('\\','/')+'/'
+    env = os.environ.copy()
+    env['PATH'] = sys.exec_prefix+r'\Scripts'
 
     process = subprocess.Popen(['aws','s3','sync',awsfolder,dbfolder,\
         '--profile','s3readonly',\
@@ -26,7 +28,7 @@ def S3SyncDownloadDataFrame(path,shm_name):
         '--include',shm_name.split('/')[-1]+'.json',\
         '--include',shm_name.split('/')[-1]+'.npy'],\
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,\
-        universal_newlines=True, shell=True)        
+        universal_newlines=True, shell=True, env=env)        
     
     while True:
         output = process.stdout.readline()
@@ -47,12 +49,15 @@ def S3SyncDownloadDataFrame(path,shm_name):
 def S3SyncDownloadTimeSeries(path,shm_name):    
     Logger.log.debug('AWS S3 sync download timeseries %s...' % (shm_name))           
     awsfolder = os.environ['S3_BUCKET']+'/'+shm_name+'/' 
+    env = os.environ.copy()
+    env['PATH'] = sys.exec_prefix+r'\Scripts'
+
     process = subprocess.Popen(['aws','s3','sync',awsfolder,path,\
         '--profile','s3readonly',\
         #'--delete',\
         '--exclude=shm_info.json'],\
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,\
-        universal_newlines=True, shell=True)
+        universal_newlines=True, shell=True,env=env)
     
     while True:
         output = process.stdout.readline()
@@ -79,7 +84,9 @@ def S3SyncDownloadMetadata(pathpkl,name):
     folder = folder.replace('\\','/')+'/'
     dbfolder = str(pathpkl.parents[0])
     dbfolder = dbfolder.replace('\\','/')+'/'
-    awsfolder = os.environ['S3_BUCKET'] + folder
+    awsfolder = os.environ['S3_BUCKET'] + folder    
+    env = os.environ.copy()
+    env['PATH'] = sys.exec_prefix+r'\Scripts'
 
     process = subprocess.Popen(['aws','s3','sync',awsfolder,dbfolder,\
         '--profile','s3readonly',\
@@ -90,7 +97,7 @@ def S3SyncDownloadMetadata(pathpkl,name):
         '--include',name.split('/')[-1]+'.xlsx'],\
         #'--delete'],\
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,\
-        universal_newlines=True, shell=True)        
+        universal_newlines=True, shell=True,env=env)        
     
     while True:
         output = process.stdout.readline()
@@ -106,7 +113,7 @@ def S3SyncDownloadMetadata(pathpkl,name):
         Logger.log.debug('AWS S3 Sync metadata %s DONE!' % (name))
     else:
         Logger.log.error('AWS S3 Sync metadata %s ERROR!' % (name))
-        Logger.log.error('AWS S3 Sync metadata \"%s\"' % (process.stderr.readlines()))
+        Logger.log.error('AWS S3 Sync metadata \"%s\"' % (''.join(process.stderr.readlines())))
     return success
 
 def S3Upload(localfilepath):

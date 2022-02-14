@@ -62,7 +62,6 @@ class KinesisLogStreamHandler(logging.StreamHandler):
 
     def flush(self):
         self.acquire()
-
         try:
             if self.__datastream and self.__stream_buffer:
                 self.__datastream.put_records(
@@ -78,7 +77,6 @@ class KinesisLogStreamHandler(logging.StreamHandler):
         finally:
             if self.stream and hasattr(self.stream, "flush"):
                 self.stream.flush()
-
             self.release()
 
 class KinesisLogStreamConsumer():
@@ -89,13 +87,18 @@ class KinesisLogStreamConsumer():
         self.lastlogfilepath = self.lastlogfilepath / ((datetime.utcnow()+timedelta(days=-1)).strftime('%Y%m%d')+'.log')
 
     def readLogs(self):
+        self.logfilepath = Path(os.environ['DATABASE_FOLDER']+'\\Logs\\')
+        self.logfilepath = self.logfilepath / (datetime.utcnow().strftime('%Y%m%d')+'.log')
+        self.lastlogfilepath = Path(os.environ['DATABASE_FOLDER']+'\\Logs\\')
+        self.lastlogfilepath = self.lastlogfilepath / ((datetime.utcnow()+timedelta(days=-1)).strftime('%Y%m%d')+'.log')
+
         self.dflogs = pd.DataFrame([])
         if self.logfilepath.is_file():
-            self.dflogs = pd.read_csv(self.logfilepath,header=None,sep=';')
+            self.dflogs = pd.read_csv(self.logfilepath,header=None,sep=';',error_bad_lines=False)
             self.dflogs.columns = ['shardid','sequence_number','user_name','asctime','logger_name','level','message']
         
         if self.lastlogfilepath.is_file():
-            _dflogs = pd.read_csv(self.lastlogfilepath,header=None,sep=';')
+            _dflogs = pd.read_csv(self.lastlogfilepath,header=None,sep=';',error_bad_lines=False)
             _dflogs.columns = ['shardid','sequence_number','user_name','asctime','logger_name','level','message']
             self.dflogs = pd.concat([_dflogs,self.dflogs],axis=0)
 
@@ -130,7 +133,7 @@ class KinesisLogStreamConsumer():
         
         return self.stream
 
-    def loop(self):                
+    def loop(self):
         while True:        
             for i in range(len(self.stream['Shards'])):
                 response = self.client.get_records(\
@@ -141,7 +144,7 @@ class KinesisLogStreamConsumer():
                     for r in response['Records']:
                         try:
                             rec = r['Data'].decode(encoding="UTF-8", errors="strict")                        
-                            rec = json.loads(rec.replace("\'", "\""))
+                            rec = json.loads(rec.replace("\'", "\"").replace(';',','))
                             line = '%s;%s;%s;%s;%s' % (rec['user_name'],rec['asctime'],\
                                 rec['logger_name'],rec['level'],rec['message']) 
                             print(line)
@@ -156,7 +159,8 @@ class KinesisLogStreamConsumer():
                             with open(logfilepath,'a+',encoding = 'utf-8') as f:
                                 f.write(line+'\n')  
                         except Exception as e:
-                            print('Invalid record:'+str(e))
+                            print('Invalid record:'+str(rec))
+                            print('Invalid record error:'+str(e))
             time.sleep(1)
         
 # REAL TIME

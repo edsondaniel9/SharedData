@@ -9,7 +9,7 @@ from SharedData.Metadata import Metadata
 
 class SharedData:
     
-    def __init__(self, database, mode='rw', sync_frequency_days=1):
+    def __init__(self, database, mode='rw', sync_frequency_days=0.5):
         if Logger.log is None:            
             Logger('SharedData')
         
